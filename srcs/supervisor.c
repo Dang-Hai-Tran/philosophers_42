@@ -6,7 +6,7 @@
 /*   By: datran <datran@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/15 10:09:11 by datran            #+#    #+#             */
-/*   Updated: 2023/05/30 16:20:21 by datran           ###   ########.fr       */
+/*   Updated: 2023/07/31 16:30:22 by datran           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,15 +29,11 @@ bool	check_sim_stop(t_table *table)
 	return (sim_stop);
 }
 
-static bool	monitoring(t_table *table)
+static bool	check_all_philo(t_table *table, bool *all_eat_max, time_t time_now)
 {
 	int		i;
-	time_t	time_now;
-	bool	all_eat_max;
 
 	i = -1;
-	time_now = get_time_in_ms();
-	all_eat_max = true;
 	while (++i < table->nbs_philo)
 	{
 		pthread_mutex_lock(&table->philos[i].eat_lock);
@@ -48,10 +44,23 @@ static bool	monitoring(t_table *table)
 			pthread_mutex_unlock(&table->philos[i].eat_lock);
 			return (true);
 		}
-		if (table->times_must_eat != -1 && table->philos[i].nbs_eat < table->times_must_eat)
-			all_eat_max = false;
+		if (table->times_must_eat != -1 && table->philos[i].nbs_eat \
+		< table->times_must_eat)
+			*all_eat_max = false;
 		pthread_mutex_unlock(&table->philos[i].eat_lock);
 	}
+	return (false);
+}
+
+static bool	monitoring(t_table *table)
+{
+	time_t	time_now;
+	bool	all_eat_max;
+
+	time_now = get_time_in_ms();
+	all_eat_max = true;
+	if (check_all_philo(table, &all_eat_max, time_now))
+		return (true);
 	if (table->times_must_eat != -1 && all_eat_max == true)
 	{
 		set_sim_stop(table);
